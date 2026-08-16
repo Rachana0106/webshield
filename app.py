@@ -7,13 +7,25 @@ from datetime import datetime, timezone
 import sqlite3
 import json
 import time
+import os
 
 from analyzer.web_analyzer import analyze_website
 from reports.pdf_report import build_pdf_report
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "data" / "webshield.db"
-REPORT_DIR = BASE_DIR / "reports" / "generated"
+
+# Vercel Functions have a read-only deployed filesystem.
+# Use writable /tmp for runtime SQLite/report files on Vercel.
+# Local development continues using the project folders.
+IS_VERCEL = bool(os.getenv("VERCEL"))
+
+if IS_VERCEL:
+    RUNTIME_DIR = Path("/tmp") / "webshield"
+    DB_PATH = RUNTIME_DIR / "webshield.db"
+    REPORT_DIR = RUNTIME_DIR / "reports"
+else:
+    DB_PATH = BASE_DIR / "data" / "webshield.db"
+    REPORT_DIR = BASE_DIR / "reports" / "generated"
 
 app = FastAPI(title="WebShield", version="2.0.0")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
@@ -27,7 +39,7 @@ SCAN_COOLDOWN_SECONDS = 2.5
 def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(str(DB_PATH)) as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS scans (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +61,7 @@ def startup_event():
 
 
 def load_recent_scans(limit=10):
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(str(DB_PATH)) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute("""
             SELECT id, target_url, final_url, score, severity,
@@ -62,7 +74,7 @@ def load_recent_scans(limit=10):
 
 
 def find_previous_scan(final_url):
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(str(DB_PATH)) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute("""
             SELECT id, score, result_json, created_at
@@ -142,7 +154,7 @@ def scan(request: Request, url: str = Form(...)):
 
     created_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
 
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(str(DB_PATH)) as conn:
         cursor = conn.execute("""
             INSERT INTO scans (
                 target_url, final_url, score, severity,
@@ -165,7 +177,7 @@ def scan(request: Request, url: str = Form(...)):
     result["created_at"] = created_at
 
     # Save the complete object including scan metadata for future report generation.
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(str(DB_PATH)) as conn:
         conn.execute(
             "UPDATE scans SET result_json = ? WHERE id = ?",
             (json.dumps(result), scan_id)
@@ -177,7 +189,7 @@ def scan(request: Request, url: str = Form(...)):
 
 @app.get("/api/scans/{scan_id}")
 def get_scan(scan_id: int):
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(str(DB_PATH)) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT * FROM scans WHERE id = ?", (scan_id,)
@@ -199,7 +211,7 @@ def list_scans():
 
 @app.get("/api/report/{scan_id}")
 def report(scan_id: int):
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(str(DB_PATH)) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT * FROM scans WHERE id = ?", (scan_id,)

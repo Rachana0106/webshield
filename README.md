@@ -28,3 +28,16 @@ uvicorn app:app --reload
 Open `http://127.0.0.1:8000`.
 
 Use only on websites you own or are authorized to assess.
+
+
+## Vercel deployment
+
+WebShield detects Vercel automatically.
+
+On Vercel:
+- runtime SQLite is stored under `/tmp/webshield/`
+- generated PDF reports are stored under `/tmp/webshield/reports/`
+- these files are temporary and may disappear between serverless instances/deployments
+
+This keeps the scanner and PDF feature working on Vercel. For durable scan history,
+replace SQLite with a managed database in a future cloud version.
