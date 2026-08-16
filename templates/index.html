@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebShield — Website Security Check</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <header class="topbar">
+    <div>
+      <div class="brand">🛡️ WebShield <span class="v2">FINAL</span></div>
+      <div class="tagline">Understand your website security. Improve it safely.</div>
+    </div>
+    <div class="status-pill">Passive • Defensive • Beginner Friendly</div>
+  </header>
+
+  <main class="container">
+    <section class="hero card">
+      <div>
+        <span class="eyebrow">WEBSITE SECURITY CHECK</span>
+        <h1>Website Security Assessment You Can Verify</h1>
+        <p>
+          WebShield reports only what it can support with observable evidence. Unseen or weakly tested areas are marked N/A or Limited instead of receiving a misleading 100/100.
+        </p>
+      </div>
+
+      <form id="scanForm" class="scan-form">
+        <label for="url">Website URL</label>
+        <div class="input-row">
+          <input id="url" name="url" type="text" placeholder="https://example.com" required />
+          <button id="scanBtn" type="submit">Check Website</button>
+        </div>
+        <small>Use only on websites you own or are authorized to review.</small>
+      </form>
+    </section>
+
+    <section id="loading" class="card hidden loading-card">
+      <div class="spinner"></div>
+      <div>
+        <h3>Checking your website…</h3>
+        <p>Reviewing HTTPS, browser protections, cookies, forms, CORS and public security signals.</p>
+      </div>
+    </section>
+
+    <section id="errorBox" class="error-box hidden"></section>
+
+    <section id="results" class="hidden">
+
+      <section class="card main-result">
+        <div class="score-block">
+          <span class="eyebrow">WEBSHIELD OBSERVED SECURITY POSTURE</span>
+          <strong id="score">--</strong>
+          <h2 id="posture">--</h2>
+          <p class="muted">This is a passive configuration score for evaluated areas only - not a hackability score or a guarantee of security.</p>
+        </div>
+
+        <div class="simple-counts">
+          <div><span>Important</span><strong id="importantCount">0</strong></div>
+          <div><span>Needs review</span><strong id="manualCount">0</strong></div>
+          <div><span>Evaluated coverage</span><strong id="coverageValue">0%</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <span class="eyebrow">QUICK ANSWER</span>
+        <h2>Could this website be hacked?</h2>
+        <div id="hackability"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">WHAT TO DO NEXT</span>
+            <h2>Security Improvements</h2>
+          </div>
+          <a id="reportBtn" class="ghost-btn" href="#" target="_blank">Download Full Report</a>
+        </div>
+        <div id="beginnerSummary"></div>
+      </section>
+
+      <section class="card">
+        <span class="eyebrow">CIA TRIAD</span>
+        <h2>Confidentiality, Integrity & Availability</h2>
+        <p class="muted">CIA is shown qualitatively. WebShield does not invent percentage scores for properties it cannot directly measure.</p>
+        <div id="ciaCards" class="cia-grid"></div>
+      </section>
+
+      <section id="comparisonCard" class="card hidden">
+        <span class="eyebrow">RESCAN</span>
+        <h2>What changed since last time?</h2>
+        <div id="comparison"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">ACTION PLAN</span>
+            <h2>AI Fix Prompt</h2>
+          </div>
+          <button id="copyPromptBtn" type="button" class="ghost-button">Copy Prompt</button>
+        </div>
+        <p class="muted">
+          Paste this into an AI assistant after telling it your framework/hosting setup. The prompt tells the AI to preserve your current features instead of blindly changing things.
+        </p>
+        <pre id="aiPrompt" class="prompt-box"></pre>
+      </section>
+
+      <section class="card">
+        <span class="eyebrow">FINDINGS</span>
+        <h2>What WebShield Found</h2>
+        <p class="muted">Open a finding only when you want more detail. The dashboard stays simple; the PDF contains the full explanation.</p>
+        <div id="findings" class="findings compact-findings"></div>
+      </section>
+
+      <div class="grid-2">
+        <section class="card">
+          <span class="eyebrow">SECURITY AREAS</span>
+          <h2>Category Scores</h2>
+          <div id="categoryScores" class="bars"></div>
+        </section>
+
+        <section class="card">
+          <span class="eyebrow">WEBSITE DETAILS</span>
+          <h2>Scan Summary</h2>
+          <div id="summary" class="summary-list"></div>
+        </section>
+      </div>
+
+      <details class="card advanced-section">
+        <summary>Show technical details</summary>
+        <div class="grid-2 technical-grid">
+          <section>
+            <h3>Security Headers</h3>
+            <div id="headers" class="check-list"></div>
+          </section>
+          <section>
+            <h3>HTTPS / TLS</h3>
+            <div id="tls" class="summary-list"></div>
+          </section>
+          <section>
+            <h3>Forms, Cookies & CORS</h3>
+            <div id="application" class="summary-list"></div>
+          </section>
+          <section>
+            <h3>Resources & Technology</h3>
+            <div id="client" class="summary-list"></div>
+            <div id="techChips" class="chips"></div>
+          </section>
+        </div>
+      </details>
+
+    </section>
+
+    <section class="card history-card">
+      <span class="eyebrow">HISTORY</span>
+      <h2>Recent Scans</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Target</th>
+              <th>Score</th>
+              <th>Posture</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+          {% for row in history %}
+            <tr class="history-row" data-id="{{ row.id }}">
+              <td>{{ row.final_url or row.target_url }}</td>
+              <td>{{ row.score }}/100</td>
+              <td>{{ row.severity }}</td>
+              <td>{{ row.created_at }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="empty">No scans yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    WebShield performs passive defensive checks. It does not exploit websites and cannot guarantee complete security.
+  </footer>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
